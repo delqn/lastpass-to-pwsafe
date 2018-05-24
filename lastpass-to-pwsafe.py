@@ -24,23 +24,42 @@ PWSafeRow = collections.namedtuple(
         'Password Policy Name', 'History', 'Run Command', 'DCA', 'Shift+DCA',
         'e-mail', 'Protected', 'Symbols', 'Keyboard Shortcut', 'Notes')])
 
-LP_TO_PWS_REMAP = {
-    'url': 'URL',
-    'username': 'Username',
-    'password': 'Password',
-    'extra': 'Notes',
-    'name': 'Notes',
-    'grouping': 'Group/Title',
-    'fav': 'Protected',
+PWS_FROM_LP_REMAP = {
+    'Group/Title': ['grouping', 'name'],
+    'Username': ['username'],
+    'Password': ['password'],
+    'URL': ['url'],
+    'AutoType': [],
+    'Created Time': [],
+    'Password Modified Time': [],
+    'Last Access Time': [],
+    'Password Expiry Date': [],
+    'Password Expiry Interval': [],
+    'Record Modified Time': [],
+    'Password Policy': [],
+    'Password Policy Name': [],
+    'History': [],
+    'Run Command': [],
+    'DCA': [],
+    'Shift+DCA': [],
+    'e-mail': [],
+    'Protected': [],
+    'Symbols': [],
+    'Keyboard Shortcut': [],
+    'Notes': ['fav'],
 }
 
 def from_LP_to_PWS(lp_record):
     lp_dict = lp_record._asdict()
     pws_record = {}
-    for field in LastPassRow._fields:
-        pws_record[_encode_key(LP_TO_PWS_REMAP[field])] = lp_dict[field]
-    missing_keys = set(PWSafeRow._fields).difference(pws_record.keys())
-    pws_record.update({k: None for k in missing_keys})
+    for pw_field in PWSafeRow._fields:
+        pw_values = []
+        for lp_key in PWS_FROM_LP_REMAP[_decode_key(pw_field)]:
+            val = lp_dict.get(lp_key, '_')
+            if lp_key == 'name':
+                val = val.replace('.', '_')
+            pw_values.append(val)
+        pws_record[pw_field] = '.'.join(pw_values)
     return PWSafeRow(**pws_record)
 
 def get_lastpass_records(fname):
@@ -64,7 +83,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     with open(sys.argv[2], mode='w') as f:
-        csv_writer = csv.writer(f, delimiter='\t', quotechar='"', quoting=csv.QUOTE_ALL)
+        csv_writer = csv.writer(f, delimiter='\t', quotechar='"', quoting=csv.QUOTE_NONE)
         csv_writer.writerow([_decode_key(k) for k in PWSafeRow._fields])
         for lp in get_lastpass_records(sys.argv[1]):
             pws_dict = from_LP_to_PWS(lp)._asdict()
