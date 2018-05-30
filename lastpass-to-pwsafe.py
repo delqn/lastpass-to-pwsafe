@@ -49,7 +49,8 @@ PWS_FROM_LP_REMAP = {
     'Notes': ['fav'],
 }
 
-def from_LP_to_PWS(lp_record):
+
+def from_lastpass_to_pwsafe(lp_record):
     lp_dict = lp_record._asdict()
     pws_record = {}
     for pw_field in PWSafeRow._fields:
@@ -58,9 +59,11 @@ def from_LP_to_PWS(lp_record):
             val = lp_dict.get(lp_key, '_')
             if lp_key == 'name':
                 val = val.replace('.', '_')
-            pw_values.append(val)
+            if val:
+                pw_values.append(val)
         pws_record[pw_field] = '.'.join(pw_values)
     return PWSafeRow(**pws_record)
+
 
 def get_lastpass_records(fname):
     with open(fname, mode='r') as f:
@@ -69,8 +72,6 @@ def get_lastpass_records(fname):
         assert headers == LastPassRow._fields, '{} <> {}'.format(headers, LastPassRow._fields)
         passwords = [LastPassRow(**dict(zip(headers, row))) for row in reader]
     return passwords
-
-       
 
 
 if __name__ == '__main__':
@@ -86,11 +87,5 @@ if __name__ == '__main__':
         csv_writer = csv.writer(f, delimiter='\t', quotechar='"', quoting=csv.QUOTE_NONE)
         csv_writer.writerow([_decode_key(k) for k in PWSafeRow._fields])
         for lp in get_lastpass_records(sys.argv[1]):
-            pws_dict = from_LP_to_PWS(lp)._asdict()
+            pws_dict = from_lastpass_to_pwsafe(lp)._asdict()
             csv_writer.writerow([pws_dict[k] for k in PWSafeRow._fields])
-    
-
-
-
-            
-
